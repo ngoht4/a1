@@ -14,4 +14,4 @@ lbl1.move(10,20);
 let btn = new Button(w);
 btn.tabindex = 2;
 btn.fontSize = 14
-btn.move(12, 50)
+btn.move(); 

@@ -1,118 +1,197 @@
-// importing local code, code we have written
-import {IdleUpWidgetState, PressedWidgetState } from "../core/ui";
-import {Window, Widget, RoleType, EventArgs} from "../core/ui";
-// importing code from SVG.js library
-import {Rect, Text, Box} from "../core/ui";
+import { IdleUpWidgetState, PressedWidgetState } from "../core/ui";
+import { Window, Widget, RoleType, EventArgs } from "../core/ui";
+import { Rect, Text, Box } from "../core/ui";
 
-class Button extends Widget{
+class Button extends Widget 
+{
     private _rect: Rect;
     private _text: Text;
     private _input: string;
     private _fontSize: number;
     private _text_y: number;
     private _text_x: number;
-    private defaultText: string= "Button";
+    private defaultText: string = "Button";
     private defaultFontSize: number = 18;
-    private defaultWidth: number = 80;
-    private defaultHeight: number = 30;
+    private defaultWidth: number = 2000;
+    private defaultHeight: number = 400;
+    private _clickCallback: ((sender: Button) => void) | null = null;
 
-    constructor(parent:Window){
+    constructor(parent: Window) 
+    {
         super(parent);
-        // set defaults
         this.height = this.defaultHeight;
         this.width = this.defaultWidth;
         this._input = this.defaultText;
         this._fontSize = this.defaultFontSize;
-        // set Aria role
         this.role = RoleType.button;
-        // render widget
         this.render();
-        // set default or starting state
-        this.setState(new IdleUpWidgetState());
-        // prevent text selection
+        this.normal();
         this.selectable = false;
     }
 
-    set fontSize(size:number){
-        this._fontSize= size;
+    set fontSize(size: number) 
+    {
+        this._fontSize = size;
         this.update();
     }
 
-    private positionText(){
-        let box:Box = this._text.bbox();
-        // in TS, the prepending with + performs a type conversion from string to number
-        this._text_y = (+this._rect.y() + ((+this._rect.height()/2)) - (box.height/2));
+    private positionText() 
+    {
+        let box: Box = this._text.bbox();
+        this._text_y = (+this._rect.y() + (+this._rect.height() / 2)) - (box.height / 2);
         this._text.x(+this._rect.x() + 4);
-        if (this._text_y > 0){
+        if (this._text_y > 0) 
+        {
             this._text.y(this._text_y);
         }
     }
-    
-    render(): void {
+
+    render(): void 
+    {
         this._group = (this.parent as Window).window.group();
         this._rect = this._group.rect(this.width, this.height);
         this._rect.stroke("black");
         this._text = this._group.text(this._input);
-        // Set the outer svg element 
         this.outerSvg = this._group;
-        // Add a transparent rect on top of text to 
-        // prevent selection cursor and to handle mouse events
-        let eventrect = this._group.rect(this.width, this.height).opacity(0).attr('id', 0);
-
-        // register objects that should receive event notifications.
-        // for this widget, we want to know when the group or rect objects
-        // receive events
+        let eventrect = this._group.rect(this.width, this.height).opacity(0).attr("id", 0);
         this.registerEvent(eventrect);
+        eventrect.mouseover(() => 
+        {
+            this.hover();
+        });
+        eventrect.mouseout(() => 
+        {
+            this.normal();
+        });
     }
 
-    override update(): void {
-        if(this._text != null)
-            this._text.font('size', this._fontSize);
+    override update(): void 
+    {
+        if (this._text != null) 
+        {
+            this._text.font("size", this._fontSize);
             this._text.text(this._input);
             this.positionText();
-
-        if(this._rect != null)
+        }
+        if (this._rect != null) 
+        {
             this._rect.fill(this.backcolor);
-        
+        }
         super.update();
     }
     
-    pressReleaseState(): void{
-
-        if (this.previousState instanceof PressedWidgetState)
+    pressReleaseState(): void {
+        if (this.previousState instanceof PressedWidgetState) 
+        {
             this.raise(new EventArgs(this));
+            if (this._clickCallback) 
+            {
+                this._clickCallback(this);
+            } else 
+            {
+                let msg = document.getElementById("message");
+                if (!msg) 
+                {
+                    msg = document.createElement("div");
+                    msg.setAttribute("id", "message");
+                    msg.style.fontSize = "24px";
+                    msg.style.marginTop = "20px";
+                    document.body.appendChild(msg);
+                }
+                msg.innerText = "button has been pressed";
+            }
+        }
     }
-
-    //TODO: implement the onClick event using a callback passed as a parameter
-    onClick(/*TODO: add callback parameter*/):void{}
-
     
-    //TODO: give the states something to do! Use these methods to control the visual appearance of your
-    //widget
-    idleupState(): void {
-        throw new Error("Method not implemented.");
+    public onClick(callback: (sender: Button) => void): void 
+    {
+        this._clickCallback = callback;
     }
-    idledownState(): void {
-        throw new Error("Method not implemented.");
+    
+    normal(): void 
+    {
+        this.backcolor = "red";
+        this.update();
     }
-    pressedState(): void {
-        throw new Error("Method not implemented.");
+    
+    down(): void 
+    {
+        this.backcolor = "#ff6666";
+        this.update();
     }
-    hoverState(): void {
-        throw new Error("Method not implemented.");
+    
+    pressed(): void 
+    {
+        this.backcolor = "#cc0000";
+        this.update();
     }
-    hoverPressedState(): void {
-        throw new Error("Method not implemented.");
+    
+    hover(): void
+    {
+        this.backcolor = "#ff3333";
+        this.update();
     }
-    pressedoutState(): void {
-        throw new Error("Method not implemented.");
+    
+    hoverPress(): void 
+    {
+        this.backcolor = "#cc3333";
+        this.update();
     }
-    moveState(): void {
-        throw new Error("Method not implemented.");
+    
+    released(): void 
+    {
+        this.normal();
     }
-    keyupState(keyEvent?: KeyboardEvent): void {
-        throw new Error("Method not implemented.");
+    
+    move(): void 
+    {
+        this.hover();
+    }
+    
+    keyUp(keyEvent?: KeyboardEvent): void 
+    {
+        this.normal();
+    }
+
+    override idleupState(): void 
+    {
+        this.normal();
+    }
+
+    override idledownState(): void 
+    {
+        this.down();
+    }
+
+    override pressedState(): void 
+    {
+        this.pressed();
+    }
+
+    override hoverState(): void 
+    {
+        this.hover();
+    }
+
+    override hoverPressedState(): void 
+    {
+        this.hoverPress();
+    }
+
+    override pressedoutState(): void 
+    {
+        this.released();
+    }
+
+    override moveState(): void 
+    {
+        this.move();
+    }
+
+    override keyupState(keyEvent?: KeyboardEvent): void 
+    {
+        this.keyUp(keyEvent);
     }
 }
 
-export {Button}
+export { Button };
